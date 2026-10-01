@@ -197,7 +197,7 @@ elif menu == "3. Cadastrar e Editar Candidatos":
 
   if not dados["temas"] or not dados["cargos"]:
     st.warning(
-        "⚠️ Cadastre pelo menos um **Tema** e um **Cargo** antes de registrar"
+        "⚠️️ Cadastre pelo menos um **Tema** e um **Cargo** antes de registrar"
         " candidatos."
     )
   else:
@@ -205,75 +205,49 @@ elif menu == "3. Cadastrar e Editar Candidatos":
       st.session_state["modo_edicao_candidato"] = None
 
     if dados["candidatos"]:
-      col_acao1, col_acao2 = st.columns([0.7, 0.3])
+      nomes_candidatos = [c["nome"] for c in dados["candidatos"]]
 
-      with col_acao1:
-        nomes_candidatos = [c["nome"] for c in dados["candidatos"]]
-
-        try:
-          sel_index = (
-              nomes_candidatos.index(
-                  st.session_state["modo_edicao_candidato"]
-              )
-              + 1
-              if st.session_state["modo_edicao_candidato"] in nomes_candidatos
-              else 0
-          )
-        except ValueError:
-          sel_index = 0
-
-        escolha = st.selectbox(
-            "Selecionar candidato existente para editar:",
-            ["-- Novo Candidato / Limpar Campos --"] + nomes_candidatos,
-            index=sel_index,
-            key="select_gerenciar_candidato",
+      try:
+        sel_index = (
+            nomes_candidatos.index(st.session_state["modo_edicao_candidato"]) + 1
+            if st.session_state["modo_edicao_candidato"] in nomes_candidatos
+            else 0
         )
+      except ValueError:
+        sel_index = 0
 
-        if escolha == "-- Novo Candidato / Limpar Campos --":
-          if st.session_state["modo_edicao_candidato"] is not None:
-            st.session_state["modo_edicao_candidato"] = None
-            for k in [
-                "cand_nome",
-                "cand_num",
-                "cand_partido",
-                "cand_sigla",
-                "cand_foto",
-            ]:
-              if k in st.session_state:
-                del st.session_state[k]
-            for k in list(st.session_state.keys()):
-              if (
-                  k.startswith("propostas_lista_")
-                  or k.startswith("links_lista_")
-                  or k.startswith("loaded_")
-              ):
-                del st.session_state[k]
-            st.rerun()
-        else:
-          if escolha != st.session_state["modo_edicao_candidato"]:
-            st.session_state["modo_edicao_candidato"] = escolha
-            for k in [
-                "cand_nome",
-                "cand_num",
-                "cand_partido",
-                "cand_sigla",
-                "cand_foto",
-            ]:
-              if k in st.session_state:
-                del st.session_state[k]
-            for k in list(st.session_state.keys()):
-              if (
-                  k.startswith("propostas_lista_")
-                  or k.startswith("links_lista_")
-                  or k.startswith("loaded_")
-              ):
-                del st.session_state[k]
-            st.rerun()
+      # Selectbox que gerencia edição (ao escolher um nome) ou novo cadastro (opção vazia)
+      escolha = st.selectbox(
+          "Selecione um candidato para editar (ou deixe na opção vazia para"
+          " cadastrar novo):",
+          ["-- Novo Candidato / Limpar Campos --"] + nomes_candidatos,
+          index=sel_index,
+          key="select_gerenciar_candidato",
+      )
 
-      with col_acao2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("➕ Novo Candidato", use_container_width=True):
+      if escolha == "-- Novo Candidato / Limpar Campos --":
+        if st.session_state["modo_edicao_candidato"] is not None:
           st.session_state["modo_edicao_candidato"] = None
+          for k in [
+              "cand_nome",
+              "cand_num",
+              "cand_partido",
+              "cand_sigla",
+              "cand_foto",
+          ]:
+            if k in st.session_state:
+              del st.session_state[k]
+          for k in list(st.session_state.keys()):
+            if (
+                k.startswith("propostas_lista_")
+                or k.startswith("links_lista_")
+                or k.startswith("loaded_")
+            ):
+              del st.session_state[k]
+          st.rerun()
+      else:
+        if escolha != st.session_state["modo_edicao_candidato"]:
+          st.session_state["modo_edicao_candidato"] = escolha
           for k in [
               "cand_nome",
               "cand_num",
@@ -315,29 +289,72 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     )
     st.subheader(sub_titulo)
 
-    # Atribui valores apenas se estiver em modo edição; se for novo, campos ficam vazios sem travar o state
-    def_nome = candidato_selecionado["nome"] if modo_edicao and candidato_selecionado else ""
-    def_num = candidato_selecionado.get("numero", "") if modo_edicao and candidato_selecionado else ""
-    def_partido = candidato_selecionado["partido"] if modo_edicao and candidato_selecionado else ""
-    def_sigla = candidato_selecionado.get("sigla", "") if modo_edicao and candidato_selecionado else ""
-    def_cargo = candidato_selecionado["cargo"] if modo_edicao and candidato_selecionado else dados["cargos"][0]
-    def_foto = candidato_selecionado.get("foto", "") if modo_edicao and candidato_selecionado else ""
-    def_propostas = candidato_selecionado.get("propostas", {}) if modo_edicao and candidato_selecionado else {}
+    # Valores padrão (se for edição, puxa os dados; se for novo, ficam vazios)
+    def_nome = (
+        candidato_selecionado["nome"]
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_num = (
+        candidato_selecionado.get("numero", "")
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_partido = (
+        candidato_selecionado["partido"]
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_sigla = (
+        candidato_selecionado.get("sigla", "")
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_cargo = (
+        candidato_selecionado["cargo"]
+        if modo_edicao and candidato_selecionado
+        else dados["cargos"][0]
+    )
+    def_foto = (
+        candidato_selecionado.get("foto", "")
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_propostas = (
+        candidato_selecionado.get("propostas", {})
+        if modo_edicao and candidato_selecionado
+        else {}
+    )
 
     col1, col2, col3 = st.columns(3)
     with col1:
-      nome_candidato = st.text_input("Nome do Candidato", value=def_nome, key="cand_nome")
-      numero_candidato = st.text_input("Número do Candidato", value=def_num, key="cand_num")
+      nome_candidato = st.text_input(
+          "Nome do Candidato", value=def_nome, key="cand_nome"
+      )
+      numero_candidato = st.text_input(
+          "Número do Candidato", value=def_num, key="cand_num"
+      )
     with col2:
-      partido = st.text_input("Partido / Coligação", value=def_partido, key="cand_partido")
-      sigla = st.text_input("Sigla (ex: PT, PL, MDB)", value=def_sigla, key="cand_sigla")
+      partido = st.text_input(
+          "Partido / Coligação", value=def_partido, key="cand_partido"
+      )
+      sigla = st.text_input(
+          "Sigla (ex: PT, PL, MDB)", value=def_sigla, key="cand_sigla"
+      )
     with col3:
       try:
         cargo_index = dados["cargos"].index(def_cargo)
       except ValueError:
         cargo_index = 0
-      cargo_selecionado = st.selectbox("Cargo", dados["cargos"], index=cargo_index, key="cand_cargo")
-      foto_url = st.text_input("URL da Foto", value=def_foto, placeholder="https://exemplo.com/foto.jpg", key="cand_foto")
+      cargo_selecionado = st.selectbox(
+          "Cargo", dados["cargos"], index=cargo_index, key="cand_cargo"
+      )
+      foto_url = st.text_input(
+          "URL da Foto",
+          value=def_foto,
+          placeholder="https://exemplo.com/foto.jpg",
+          key="cand_foto",
+      )
 
     st.markdown("---")
     st.subheader("Propostas por Tema")
@@ -348,29 +365,44 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         state_key = f"propostas_lista_{tema_idx}"
 
         if state_key not in st.session_state or (
-            modo_edicao and f"loaded_{idx_candidato}_{tema}" not in st.session_state
+            modo_edicao
+            and f"loaded_{idx_candidato}_{tema}" not in st.session_state
         ):
           propostas_existentes = def_propostas.get(tema, [])
           if modo_edicao and propostas_existentes:
-            st.session_state[state_key] = [dict(p) for p in propostas_existentes]
+            st.session_state[state_key] = [
+                dict(p) for p in propostas_existentes
+            ]
           else:
             st.session_state[state_key] = [{"descricao": "", "links": []}]
 
           if modo_edicao:
             st.session_state[f"loaded_{idx_candidato}_{tema}"] = True
 
-        if st.button(f"➕ Adicionar Proposta em {tema}", key=f"add_prop_{tema_idx}"):
+        if st.button(
+            f"➕ Adicionar Proposta em {tema}", key=f"add_prop_{tema_idx}"
+        ):
           st.session_state[state_key].append({"descricao": "", "links": []})
 
         lista_itens_tema = []
-        for p_idx, prop_item in enumerate(st.session_state[state_key].copy()):
+        for p_idx, prop_item in enumerate(
+            st.session_state[state_key].copy()
+        ):
           col_p1, col_p2 = st.columns([0.9, 0.1])
           col_p1.markdown(f"**Proposta {p_idx+1}**")
-          if col_p2.button("🗑️", key=f"del_prop_item_{tema_idx}_{p_idx}", help="Remover proposta"):
+          if col_p2.button(
+              "🗑️",
+              key=f"del_prop_item_{tema_idx}_{p_idx}",
+              help="Remover proposta",
+          ):
             st.session_state[state_key].pop(p_idx)
             st.rerun()
 
-          desc = st.text_area("Descrição da Proposta", value=prop_item.get("descricao", ""), key=f"desc_{tema_idx}_{p_idx}")
+          desc = st.text_area(
+              "Descrição da Proposta",
+              value=prop_item.get("descricao", ""),
+              key=f"desc_{tema_idx}_{p_idx}",
+          )
 
           st.markdown("🔗 *Links / Referências da Proposta:*")
           links_lista = []
@@ -379,14 +411,30 @@ elif menu == "3. Cadastrar e Editar Candidatos":
           if links_state_key not in st.session_state:
             st.session_state[links_state_key] = prop_item.get("links", [])
 
-          if st.button("➕ Adicionar Link", key=f"add_link_{tema_idx}_{p_idx}"):
-            st.session_state[links_state_key].append({"label": "", "url": ""})
+          if st.button(
+              "➕ Adicionar Link", key=f"add_link_{tema_idx}_{p_idx}"
+          ):
+            st.session_state[links_state_key].append(
+                {"label": "", "url": ""}
+            )
 
-          for l_idx, link_item in enumerate(st.session_state[links_state_key].copy()):
+          for l_idx, link_item in enumerate(
+              st.session_state[links_state_key].copy()
+          ):
             l_col1, l_col2, l_col3 = st.columns([0.4, 0.5, 0.1])
-            l_label = l_col1.text_input("Label (ex: Página 5)", value=link_item.get("label", ""), key=f"llabel_{tema_idx}_{p_idx}_{l_idx}")
-            l_url = l_col2.text_input("URL ou Referência", value=link_item.get("url", ""), key=f"lurl_{tema_idx}_{p_idx}_{l_idx}")
-            if l_col3.button("🗑️", key=f"dellink_{tema_idx}_{p_idx}_{l_idx}"):
+            l_label = l_col1.text_input(
+                "Label (ex: Página 5)",
+                value=link_item.get("label", ""),
+                key=f"llabel_{tema_idx}_{p_idx}_{l_idx}",
+            )
+            l_url = l_col2.text_input(
+                "URL ou Referência",
+                value=link_item.get("url", ""),
+                key=f"lurl_{tema_idx}_{p_idx}_{l_idx}",
+            )
+            if l_col3.button(
+                "🗑️", key=f"dellink_{tema_idx}_{p_idx}_{l_idx}"
+            ):
               st.session_state[links_state_key].pop(l_idx)
               st.rerun()
 
@@ -400,7 +448,11 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         if lista_itens_tema:
           propostas_candidato[tema] = lista_itens_tema
 
-    botao_label = "Salvar Alterações do Candidato" if modo_edicao else "Salvar Novo Candidato"
+    botao_label = (
+        "Salvar Alterações do Candidato"
+        if modo_edicao
+        else "Salvar Novo Candidato"
+    )
 
     if st.button(botao_label, key="btn_salvar_candidato_unico"):
       if nome_candidato and partido:
@@ -410,7 +462,11 @@ elif menu == "3. Cadastrar e Editar Candidatos":
             "partido": partido,
             "sigla": sigla,
             "cargo": cargo_selecionado,
-            "foto": foto_url if foto_url else "https://via.placeholder.com/150?text=Foto",
+            "foto": (
+                foto_url
+                if foto_url
+                else "https://via.placeholder.com/150?text=Foto"
+            ),
             "propostas": propostas_candidato,
         }
 
@@ -421,12 +477,23 @@ elif menu == "3. Cadastrar e Editar Candidatos":
           dados["candidatos"].append(novo_registro)
           st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
 
+          # Limpa rigorosamente os campos de texto e estado para o próximo cadastro
           st.session_state["modo_edicao_candidato"] = None
-          for k in ["cand_nome", "cand_num", "cand_partido", "cand_sigla", "cand_foto"]:
+          for k in [
+              "cand_nome",
+              "cand_num",
+              "cand_partido",
+              "cand_sigla",
+              "cand_foto",
+          ]:
             if k in st.session_state:
               del st.session_state[k]
           for k in list(st.session_state.keys()):
-            if k.startswith("propostas_lista_") or k.startswith("links_lista_") or k.startswith("loaded_"):
+            if (
+                k.startswith("propostas_lista_")
+                or k.startswith("links_lista_")
+                or k.startswith("loaded_")
+            ):
               del st.session_state[k]
 
         salvar_e_sincronizar_dados(dados)
@@ -438,10 +505,15 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     st.subheader("Candidatos Já Cadastrados")
     if dados["candidatos"]:
       for idx, cand in enumerate(dados["candidatos"]):
-        with st.expander(f"{cand.get('numero','')} - {cand['nome']} ({cand.get('sigla', cand['partido'])} - {cand['cargo']})"):
+        with st.expander(
+            f"{cand.get('numero','')} - {cand['nome']} ({cand.get('sigla', cand['partido'])} - {cand['cargo']})"
+        ):
           st.image(cand["foto"], width=80)
           st.write(f"**Cargo:** {cand['cargo']}")
-          st.write(f"**Partido:** {cand['partido']} | **Sigla:** {cand.get('sigla','')}")
+          st.write(
+              f"**Partido:** {cand['partido']} | **Sigla:**"
+              f" {cand.get('sigla','')}"
+          )
           st.write(f"**Número:** {cand.get('numero','')}")
           if st.button("Remover Candidato", key=f"del_cand_{idx}"):
             dados["candidatos"].pop(idx)
@@ -457,34 +529,60 @@ elif menu == "Visualizar Embed / App Final":
   st.header("🔍 Visualização do Comparador (Embed)")
 
   if not dados["temas"] or not dados["candidatos"]:
-    st.warning("Cadastre ao menos um tema e alguns candidatos para visualizar o comparador.")
+    st.warning(
+        "Cadastre ao menos um tema e alguns candidatos para visualizar o"
+        " comparador."
+    )
   else:
     cargos_disponiveis = list(set(c["cargo"] for c in dados["candidatos"]))
-    cargo_filtro = st.selectbox("Filtrar por Cargo para Comparação:", cargos_disponiveis, key="filtro_cargo")
+    cargo_filtro = st.selectbox(
+        "Filtrar por Cargo para Comparação:",
+        cargos_disponiveis,
+        key="filtro_cargo",
+    )
 
-    candidatos_filtrados = [c for c in dados["candidatos"] if c["cargo"] == cargo_filtro]
+    candidatos_filtrados = [
+        c for c in dados["candidatos"] if c["cargo"] == cargo_filtro
+    ]
 
     if len(candidatos_filtrados) < 2:
-      st.info("Cadastre pelo menos 2 candidatos para este cargo para realizar o cruzamento de propostas.")
+      st.info(
+          "Cadastre pelo menos 2 candidatos para este cargo para realizar o"
+          " cruzamento de propostas."
+      )
     else:
-      tema_selecionado = st.selectbox("Selecione o Assunto / Tema:", dados["temas"], key="filtro_tema")
+      tema_selecionado = st.selectbox(
+          "Selecione o Assunto / Tema:", dados["temas"], key="filtro_tema"
+      )
       st.markdown("---")
 
       cols = st.columns(len(candidatos_filtrados))
       for i, cand in enumerate(candidatos_filtrados):
         with cols[i]:
-          num_str = f" <span style='background:#ddd; padding:2px 6px; border-radius:4px; font-size:0.8rem;'>{cand.get('numero')}</span>" if cand.get("numero") else ""
-          sigla_str = f" ({cand.get('sigla')})" if cand.get("sigla") else ""
+          num_str = (
+              f" <span style='background:#ddd; padding:2px 6px; border-radius:4px; font-size:0.8rem;'>{cand.get('numero')}</span>"
+              if cand.get("numero")
+              else ""
+          )
+          sigla_str = (
+              f" ({cand.get('sigla')})" if cand.get("sigla") else ""
+          )
 
-          st.markdown(f"""
+          st.markdown(
+              f"""
                     <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px 8px 0 0; border-top: 4px solid {PRIMARY_COLOR}; text-align: center; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
                         <img src="{cand['foto']}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid {SECONDARY_COLOR};">
                         <h3 style="margin: 10px 0 5px 0; font-size: 1.1rem; color: #333;">{cand['nome']} {num_str}</h3>
                         <p style="margin: 0; font-size: 0.85rem; color: #666;">{cand['partido']}{sigla_str}</p>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """,
+              unsafe_allow_html=True,
+          )
 
-          propostas_do_tema = cand.get("propostas", {}).get(tema_selecionado, [])
+          propostas_do_tema = cand.get("propostas", {}).get(
+              tema_selecionado, []
+          )
+
           propostas_html_content = ""
           if propostas_do_tema:
             for prop in propostas_do_tema:
@@ -495,26 +593,37 @@ elif menu == "Visualizar Embed / App Final":
                   label = l.get("label") or l.get("url")
                   url = l.get("url") or "#"
                   if url.startswith("http"):
-                    links_formatados.append(f'<a href="{url}" target="_blank">{label}</a>')
+                    links_formatados.append(
+                        f'<a href="{url}" target="_blank">{label}</a>'
+                    )
                   else:
                     links_formatados.append(f"<span>{label}</span>")
                 links_html = f" <i>(Ref: {' | '.join(links_formatados)})</i>"
 
-              propostas_html_content += f"<li style='margin-bottom: 8px; font-size: 0.9rem; color: #444;'>{prop['descricao']}{links_html}</li>"
+              propostas_html_content += (
+                  f"<li style='margin-bottom: 8px; font-size: 0.9rem;"
+                  f" color: #444;'>{prop['descricao']}{links_html}</li>"
+              )
             propostas_box = f"<ul style='padding-left: 20px; margin: 0;'>{propostas_html_content}</ul>"
           else:
             propostas_box = "<p style='font-size: 0.85rem; color: #888; font-style: italic; margin: 0;'>Nenhuma proposta cadastrada para este tema.</p>"
 
-          st.markdown(f"""
+          st.markdown(
+              f"""
                     <div style="background-color: #ffffff; padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid #ddd; border-top: none; min-height: 150px;">
                         <strong style="font-size: 0.9rem; color: {SECONDARY_COLOR}; display: block; margin-bottom: 8px;">Propostas:</strong>
                         {propostas_box}
                     </div>
-                    """, unsafe_allow_html=True)
+                    """,
+              unsafe_allow_html=True,
+          )
 
       st.markdown("---")
       st.subheader("💻 Código HTML para Embedar no Portal")
-      st.markdown("Copie o código abaixo e cole no HTML do seu portal para exibir este aplicativo via iframe:")
+      st.markdown(
+          "Copie o código abaixo e cole no HTML do seu portal para exibir este"
+          " aplicativo via iframe:"
+      )
 
       app_url = st.query_params.get("embed_url", "https://seu-app.streamlit.app")
       embed_code = f"""<iframe src="{app_url}?embed=true" width="100%" height="700px" style="border:none; border-radius:8px;"></iframe>"""
