@@ -111,7 +111,7 @@ if "dados" not in st.session_state:
 dados = st.session_state["dados"]
 
 # Menu lateral de navegação
-st.sidebar.title("🗳️ Gestão de Propostas")
+st.sidebar.title("🗳️️ Gestão de Propostas")
 menu = st.sidebar.selectbox(
     "Navegar para",
     [
@@ -206,8 +206,9 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     idx_candidato = None
 
     if dados["candidatos"]:
+      # Exibe apenas o nome do candidato no select[cite: 6]
       nomes_candidatos = ["-- Novo Candidato --"] + [
-          f"{c.get('numero','')} - {c['nome']}" for c in dados["candidatos"]
+          c["nome"] for c in dados["candidatos"]
       ]
       escolha_edicao = st.selectbox(
           "Deseja cadastrar um novo candidato ou editar um existente?",
@@ -361,7 +362,7 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         if lista_itens_tema:
           propostas_candidato[tema] = lista_itens_tema
 
-    # --- BOTÃO ÚNICO DE SALVAR CORRIGIDO ---
+    # --- BOTÃO ÚNICO DE SALVAR ---
     botao_label = (
         "Salvar Alterações do Candidato"
         if modo_edicao
@@ -391,7 +392,7 @@ elif menu == "3. Cadastrar e Editar Candidatos":
           dados["candidatos"].append(novo_registro)
           st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
           
-          # Limpa os estados temporários para esvaziar os campos após o cadastro de um novo
+          # Limpa os estados temporários para esvaziar os campos após o cadastro
           for k in list(st.session_state.keys()):
             if k.startswith("propostas_lista_") or k.startswith("links_lista_"):
               del st.session_state[k]
@@ -521,7 +522,7 @@ elif menu == "Visualizar Embed / App Final":
       st.markdown("---")
       st.subheader("💻 Código HTML para Embedar no Portal")
       st.markdown(
-          "Copie o código acima e cole no HTML do seu portal para exibir este"
+          "Copie o código abaixo e cole no HTML do seu portal para exibir este"
           " aplicativo via iframe:"
       )
 
