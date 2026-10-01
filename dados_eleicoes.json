@@ -135,67 +135,6 @@
                     }
                 ]
             }
-        },
-        {
-            "nome": "Clariana Barão",
-            "numero": "27",
-            "partido": "Democracia Cristã",
-            "sigla": "DC",
-            "cargo": "Presidente",
-            "foto": "https://www.tse.jus.br/imagens/imagens/foto-clariana-barao",
-            "propostas": {
-                "Economia, Trabalho e Responsabilidade Fiscal": [
-                    {
-                        "descricao": "Ambiente de negócios simples, previsível e digitalização:",
-                        "links": [
-                            {
-                                "label": "Página 5",
-                                "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/arquivos/plano-de-governo-1/@@display-file/file/plano-de-governo.pdf#page=5"
-                            }
-                        ]
-                    },
-                    {
-                        "descricao": "Crédito produtivo, garantias e capacitação para pequenos negócios:",
-                        "links": [
-                            {
-                                "label": "Página 5",
-                                "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/arquivos/plano-de-governo-1/@@display-file/file/plano-de-governo.pdf#page=5"
-                            }
-                        ]
-                    },
-                    {
-                        "descricao": "Infraestrutura, logística, rodovias, ferrovias e hidrovias (Concessões e PPPs):",
-                        "links": [
-                            {
-                                "label": "Página 5",
-                                "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/arquivos/plano-de-governo-1/@@display-file/file/plano-de-governo.pdf#page=5"
-                            }
-                        ]
-                    },
-                    {
-                        "descricao": "Responsabilidade fiscal focada em resultados, revisão de gastos e subsídios:",
-                        "links": [
-                            {
-                                "label": "Página 5",
-                                "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/arquivos/plano-de-governo-1/@@display-file/file/plano-de-governo.pdf#page=5"
-                            },
-                            {
-                                "label": "Página 6",
-                                "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/arquivos/plano-de-governo-1/@@display-file/file/plano-de-governo.pdf#page=6"
-                            }
-                        ]
-                    },
-                    {
-                        "descricao": "Segurança energética, conectividade e economia digital:",
-                        "links": [
-                            {
-                                "label": "Página 5",
-                                "url": "https://www.tse.jus.br/eleicoes/eleicoes-2026-content/arquivos/plano-de-governo-1/@@display-file/file/plano-de-governo.pdf#page=5"
-                            }
-                        ]
-                    }
-                ]
-            }
         }
     ]
 }
