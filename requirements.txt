@@ -1,0 +1,2 @@
+Plaintext
+streamlit==1.42.0
