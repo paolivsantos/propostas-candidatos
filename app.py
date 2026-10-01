@@ -205,44 +205,60 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     if "modo_edicao_idx" not in st.session_state:
       st.session_state["modo_edicao_idx"] = None  # None significa Novo Candidato
 
-    col_acao1, col_acao2 = st.columns([0.7, 0.3])
+    if dados["candidatos"]:
+      st.markdown("##### Gerenciar Candidatos Existentes")
+      col_sel1, col_sel2, col_sel3 = st.columns([0.5, 0.3, 0.2])
 
-    with col_acao1:
-      if dados["candidatos"]:
-        nomes_candidatos = [c["nome"] for c in dados["candidatos"]]
-        
-        # Determina o índice atual do selectbox baseado no session_state
-        current_selection_index = (
-            st.session_state["modo_edicao_idx"]
-            if st.session_state["modo_edicao_idx"] is not None
-            else 0
-        )
-        if current_selection_index >= len(nomes_candidatos):
-          current_selection_index = 0
+      # Exibe apenas o nome do candidato no select
+      nomes_candidatos = [c["nome"] for c in dados["candidatos"]]
+      current_selection_index = (
+          st.session_state["modo_edicao_idx"]
+          if st.session_state["modo_edicao_idx"] is not None
+          else 0
+      )
+      if current_selection_index >= len(nomes_candidatos):
+        current_selection_index = 0
 
-        # Selectbox exclusivo para edição de candidatos existentes
+      with col_sel1:
         candidato_escolhido = st.selectbox(
             "Selecione um candidato para editar:",
             nomes_candidatos,
-            index=current_selection_index if st.session_state["modo_edicao_idx"] is not None else 0,
+            index=current_selection_index,
             key="select_candidato_edicao",
         )
-        
-        if st.button("✏️ Carregar Candidato Selecionado"):
-          st.session_state["modo_edicao_idx"] = nomes_candidatos.index(candidato_escolhido)
-          # Limpa estados de propostas anteriores para forçar o recarregamento correto
+
+      with col_sel2:
+        st.write("")  # Ajuste de alinhamento vertical
+        st.write("")
+        if st.button("✏️ Carregar para Edição", use_container_width=True):
+          st.session_state["modo_edicao_idx"] = nomes_candidatos.index(
+              candidato_escolhido
+          )
           for k in list(st.session_state.keys()):
-            if k.startswith("propostas_lista_") or k.startswith("links_lista_") or k.startswith("loaded_"):
+            if (
+                k.startswith("propostas_lista_")
+                or k.startswith("links_lista_")
+                or k.startswith("loaded_")
+            ):
               del st.session_state[k]
           st.rerun()
 
-    with col_acao2:
-      st.write("")  # Espaçamento vertical
-      if st.button("➕ Adicionar Novo Candidato", use_container_width=True):
+      with col_sel3:
+        st.write("")  # Ajuste de alinhamento vertical
+        st.write("")
+        if st.button("➕ Novo Candidato", use_container_width=True):
+          st.session_state["modo_edicao_idx"] = None
+          for k in list(st.session_state.keys()):
+            if (
+                k.startswith("propostas_lista_")
+                or k.startswith("links_lista_")
+                or k.startswith("loaded_")
+            ):
+              del st.session_state[k]
+          st.rerun()
+    else:
+      if st.button("➕ Adicionar Novo Candidato"):
         st.session_state["modo_edicao_idx"] = None
-        for k in list(st.session_state.keys()):
-          if k.startswith("propostas_lista_") or k.startswith("links_lista_") or k.startswith("loaded_"):
-            del st.session_state[k]
         st.rerun()
 
     st.markdown("---")
@@ -251,7 +267,9 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     modo_edicao = st.session_state["modo_edicao_idx"] is not None
     idx_candidato = st.session_state["modo_edicao_idx"]
     candidato_selecionado = (
-        dados["candidatos"][idx_candidato] if modo_edicao and idx_candidato < len(dados["candidatos"]) else None
+        dados["candidatos"][idx_candidato]
+        if modo_edicao and idx_candidato < len(dados["candidatos"])
+        else None
     )
 
     sub_titulo = (
@@ -262,18 +280,40 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     st.subheader(sub_titulo)
 
     # Valores padrão para os inputs
-    def_nome = candidato_selecionado["nome"] if modo_edicao and candidato_selecionado else ""
-    def_num = candidato_selecionado.get("numero", "") if modo_edicao and candidato_selecionado else ""
-    def_partido = candidato_selecionado["partido"] if modo_edicao and candidato_selecionado else ""
-    def_sigla = candidato_selecionado.get("sigla", "") if modo_edicao and candidato_selecionado else ""
+    def_nome = (
+        candidato_selecionado["nome"]
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_num = (
+        candidato_selecionado.get("numero", "")
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_partido = (
+        candidato_selecionado["partido"]
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
+    def_sigla = (
+        candidato_selecionado.get("sigla", "")
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
     def_cargo = (
         candidato_selecionado["cargo"]
         if modo_edicao and candidato_selecionado
         else dados["cargos"][0]
     )
-    def_foto = candidato_selecionado.get("foto", "") if modo_edicao and candidato_selecionado else ""
+    def_foto = (
+        candidato_selecionado.get("foto", "")
+        if modo_edicao and candidato_selecionado
+        else ""
+    )
     def_propostas = (
-        candidato_selecionado.get("propostas", {}) if modo_edicao and candidato_selecionado else {}
+        candidato_selecionado.get("propostas", {})
+        if modo_edicao and candidato_selecionado
+        else {}
     )
 
     col1, col2, col3 = st.columns(3)
@@ -316,7 +356,8 @@ elif menu == "3. Cadastrar e Editar Candidatos":
 
         # Inicializa o estado das propostas do tema
         if state_key not in st.session_state or (
-            modo_edicao and f"loaded_{idx_candidato}_{tema}" not in st.session_state
+            modo_edicao
+            and f"loaded_{idx_candidato}_{tema}" not in st.session_state
         ):
           propostas_existentes = def_propostas.get(tema, [])
           if propostas_existentes:
@@ -340,7 +381,9 @@ elif menu == "3. Cadastrar e Editar Candidatos":
           col_p1, col_p2 = st.columns([0.9, 0.1])
           col_p1.markdown(f"**Proposta {p_idx+1}**")
           if col_p2.button(
-              "🗑️", key=f"del_prop_item_{tema_idx}_{p_idx}", help="Remover proposta"
+              "🗑️",
+              key=f"del_prop_item_{tema_idx}_{p_idx}",
+              help="Remover proposta",
           ):
             st.session_state[state_key].pop(p_idx)
             st.rerun()
@@ -424,11 +467,14 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         else:
           dados["candidatos"].append(novo_registro)
           st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
-          
-          # Reseta para o modo novo e limpa os estados temporários
+
           st.session_state["modo_edicao_idx"] = None
           for k in list(st.session_state.keys()):
-            if k.startswith("propostas_lista_") or k.startswith("links_lista_") or k.startswith("loaded_"):
+            if (
+                k.startswith("propostas_lista_")
+                or k.startswith("links_lista_")
+                or k.startswith("loaded_")
+            ):
               del st.session_state[k]
 
         salvar_e_sincronizar_dados(dados)
