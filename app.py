@@ -201,9 +201,9 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         " candidatos."
     )
   else:
-    # Escolher entre Novo Candidato ou Editar Existente
     modo_edicao = False
     candidato_selecionado = None
+    idx_candidato = None
 
     if dados["candidatos"]:
       nomes_candidatos = ["-- Novo Candidato --"] + [
@@ -212,6 +212,7 @@ elif menu == "3. Cadastrar e Editar Candidatos":
       escolha_edicao = st.selectbox(
           "Deseja cadastrar um novo candidato ou editar um existente?",
           nomes_candidatos,
+          key="select_modo_candidato",
       )
       if escolha_edicao != "-- Novo Candidato --":
         modo_edicao = True
@@ -226,7 +227,7 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     )
     st.subheader(sub_titulo)
 
-    # Valores padrão para os campos (vazios se novo, preenchidos se edição)
+    # Valores padrão para os inputs
     def_nome = candidato_selecionado["nome"] if modo_edicao else ""
     def_num = candidato_selecionado.get("numero", "") if modo_edicao else ""
     def_partido = candidato_selecionado["partido"] if modo_edicao else ""
@@ -277,10 +278,9 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     propostas_candidato = {}
     for tema_idx, tema in enumerate(dados["temas"]):
       with st.expander(f"📌 Propostas para: {tema}"):
-        # Chave única para guardar o estado das linhas de propostas deste tema
         state_key = f"propostas_lista_{tema_idx}"
 
-        # Se mudou de candidato ou recarregou, inicializa com as propostas salvas ou 1 vazia
+        # Inicializa o estado das propostas do tema
         if state_key not in st.session_state or (
             modo_edicao and f"loaded_{idx_candidato}_{tema}" not in st.session_state
         ):
@@ -361,12 +361,14 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         if lista_itens_tema:
           propostas_candidato[tema] = lista_itens_tema
 
+    # --- BOTÃO ÚNICO DE SALVAR CORRIGIDO ---
     botao_label = (
         "Salvar Alterações do Candidato"
         if modo_edicao
         else "Salvar Novo Candidato"
     )
-    if st.button(botao_label):
+
+    if st.button(botao_label, key="btn_salvar_candidato_unico"):
       if nome_candidato and partido:
         novo_registro = {
             "nome": nome_candidato,
@@ -381,14 +383,21 @@ elif menu == "3. Cadastrar e Editar Candidatos":
             ),
             "propostas": propostas_candidato,
         }
+
         if modo_edicao:
           dados["candidatos"][idx_candidato] = novo_registro
           st.success(f"Candidato {nome_candidato} atualizado com sucesso!")
         else:
           dados["candidatos"].append(novo_registro)
           st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
+          
+          # Limpa os estados temporários para esvaziar os campos após o cadastro de um novo
+          for k in list(st.session_state.keys()):
+            if k.startswith("propostas_lista_") or k.startswith("links_lista_"):
+              del st.session_state[k]
 
         salvar_e_sincronizar_dados(dados)
+        st.rerun()
       else:
         st.error("Preencha ao menos o Nome e o Partido do candidato.")
 
@@ -447,7 +456,6 @@ elif menu == "Visualizar Embed / App Final":
       )
       st.markdown("---")
 
-      # Organiza a exibição lado a lado com as propostas dentro de cada card
       cols = st.columns(len(candidatos_filtrados))
       for i, cand in enumerate(candidatos_filtrados):
         with cols[i]:
@@ -460,7 +468,6 @@ elif menu == "Visualizar Embed / App Final":
               f" ({cand.get('sigla')})" if cand.get("sigla") else ""
           )
 
-          # Header do card do candidato
           st.markdown(
               f"""
                     <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px 8px 0 0; border-top: 4px solid {PRIMARY_COLOR}; text-align: center; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
@@ -472,7 +479,6 @@ elif menu == "Visualizar Embed / App Final":
               unsafe_allow_html=True,
           )
 
-          # Container interno de propostas do candidato para o tema selecionado
           propostas_do_tema = cand.get("propostas", {}).get(
               tema_selecionado, []
           )
@@ -515,7 +521,7 @@ elif menu == "Visualizar Embed / App Final":
       st.markdown("---")
       st.subheader("💻 Código HTML para Embedar no Portal")
       st.markdown(
-          "Copie o código abaixo e cole no HTML do seu portal para exibir este"
+          "Copie o código acima e cole no HTML do seu portal para exibir este"
           " aplicativo via iframe:"
       )
 
