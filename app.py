@@ -118,7 +118,7 @@ menu = st.sidebar.selectbox(
         "Visualizar Embed / App Final",
         "1. Gerenciar Temas",
         "2. Gerenciar Cargos",
-        "3. Cadastrar Candidatos & Propostas",
+        "3. Cadastrar e Editar Candidatos",
     ],
 )
 
@@ -190,10 +190,10 @@ elif menu == "2. Gerenciar Cargos":
     st.info("Nenhum cargo cadastrado ainda.")
 
 # ---------------------------------------------------------
-# 3. CADASTRO DE CANDIDATOS E PROPOSTAS
+# 3. CADASTRO E EDIÇÃO DE CANDIDATOS E PROPOSTAS
 # ---------------------------------------------------------
-elif menu == "3. Cadastrar Candidatos & Propostas":
-  st.header("3. Cadastro de Candidatos e Inserção de Propostas por Tema")
+elif menu == "3. Cadastrar e Editar Candidatos":
+  st.header("3. Gerenciamento de Candidatos e Propostas")
 
   if not dados["temas"] or not dados["cargos"]:
     st.warning(
@@ -201,17 +201,72 @@ elif menu == "3. Cadastrar Candidatos & Propostas":
         " candidatos."
     )
   else:
+    # Escolher entre Novo Candidato ou Editar Existente
+    modo_edicao = False
+    candidato_selecionado = None
+
+    if dados["candidatos"]:
+      nomes_candidatos = ["-- Novo Candidato --"] + [
+          f"{c.get('numero','')} - {c['nome']}" for c in dados["candidatos"]
+      ]
+      escolha_edicao = st.selectbox(
+          "Deseja cadastrar um novo candidato ou editar um existente?",
+          nomes_candidatos,
+      )
+      if escolha_edicao != "-- Novo Candidato --":
+        modo_edicao = True
+        idx_candidato = nomes_candidatos.index(escolha_edicao) - 1
+        candidato_selecionado = dados["candidatos"][idx_candidato]
+
+    st.markdown("---")
+    sub_titulo = (
+        f"Editando Candidato: {candidato_selecionado['nome']}"
+        if modo_edicao
+        else "Cadastrar Novo Candidato"
+    )
+    st.subheader(sub_titulo)
+
+    # Valores padrão para os campos (vazios se novo, preenchidos se edição)
+    def_nome = candidato_selecionado["nome"] if modo_edicao else ""
+    def_num = candidato_selecionado.get("numero", "") if modo_edicao else ""
+    def_partido = candidato_selecionado["partido"] if modo_edicao else ""
+    def_sigla = candidato_selecionado.get("sigla", "") if modo_edicao else ""
+    def_cargo = (
+        candidato_selecionado["cargo"]
+        if modo_edicao
+        else dados["cargos"][0]
+    )
+    def_foto = candidato_selecionado.get("foto", "") if modo_edicao else ""
+    def_propostas = (
+        candidato_selecionado.get("propostas", {}) if modo_edicao else {}
+    )
+
     col1, col2, col3 = st.columns(3)
     with col1:
-      nome_candidato = st.text_input("Nome do Candidato", key="cand_nome")
-      numero_candidato = st.text_input("Número do Candidato", key="cand_num")
+      nome_candidato = st.text_input(
+          "Nome do Candidato", value=def_nome, key="cand_nome"
+      )
+      numero_candidato = st.text_input(
+          "Número do Candidato", value=def_num, key="cand_num"
+      )
     with col2:
-      partido = st.text_input("Partido / Coligação", key="cand_partido")
-      sigla = st.text_input("Sigla (ex: PT, PL, MDB)", key="cand_sigla")
+      partido = st.text_input(
+          "Partido / Coligação", value=def_partido, key="cand_partido"
+      )
+      sigla = st.text_input(
+          "Sigla (ex: PT, PL, MDB)", value=def_sigla, key="cand_sigla"
+      )
     with col3:
-      cargo_selecionado = st.selectbox("Cargo", dados["cargos"], key="cand_cargo")
+      try:
+        cargo_index = dados["cargos"].index(def_cargo)
+      except ValueError:
+        cargo_index = 0
+      cargo_selecionado = st.selectbox(
+          "Cargo", dados["cargos"], index=cargo_index, key="cand_cargo"
+      )
       foto_url = st.text_input(
           "URL da Foto",
+          value=def_foto,
           placeholder="https://exemplo.com/foto.jpg",
           key="cand_foto",
       )
@@ -222,30 +277,49 @@ elif menu == "3. Cadastrar Candidatos & Propostas":
     propostas_candidato = {}
     for tema_idx, tema in enumerate(dados["temas"]):
       with st.expander(f"📌 Propostas para: {tema}"):
-        # Gerenciamento de linhas dinâmicas por tema usando session_state
+        # Chave única para guardar o estado das linhas de propostas deste tema
         state_key = f"propostas_lista_{tema_idx}"
-        if state_key not in st.session_state:
-          st.session_state[state_key] = [{"descricao": "", "links": []}]
 
-        # Botão para adicionar nova proposta
-        if st.button(f"➕ Adicionar Proposta em {tema}", key=f"add_prop_{tema_idx}"):
+        # Se mudou de candidato ou recarregou, inicializa com as propostas salvas ou 1 vazia
+        if state_key not in st.session_state or (
+            modo_edicao and f"loaded_{idx_candidato}_{tema}" not in st.session_state
+        ):
+          propostas_existentes = def_propostas.get(tema, [])
+          if propostas_existentes:
+            st.session_state[state_key] = [
+                dict(p) for p in propostas_existentes
+            ]
+          else:
+            st.session_state[state_key] = [{"descricao": "", "links": []}]
+          if modo_edicao:
+            st.session_state[f"loaded_{idx_candidato}_{tema}"] = True
+
+        if st.button(
+            f"➕ Adicionar Proposta em {tema}", key=f"add_prop_{tema_idx}"
+        ):
           st.session_state[state_key].append({"descricao": "", "links": []})
 
         lista_itens_tema = []
         for p_idx, prop_item in enumerate(
             st.session_state[state_key].copy()
         ):
-          st.markdown(f"**Proposta {p_idx+1}**")
+          col_p1, col_p2 = st.columns([0.9, 0.1])
+          col_p1.markdown(f"**Proposta {p_idx+1}**")
+          if col_p2.button(
+              "🗑️", key=f"del_prop_item_{tema_idx}_{p_idx}", help="Remover proposta"
+          ):
+            st.session_state[state_key].pop(p_idx)
+            st.rerun()
+
           desc = st.text_area(
               "Descrição da Proposta",
-              value=prop_item["descricao"],
+              value=prop_item.get("descricao", ""),
               key=f"desc_{tema_idx}_{p_idx}",
           )
 
           st.markdown("🔗 *Links / Referências da Proposta:*")
           links_lista = []
 
-          # Gerenciar links internos da proposta
           links_state_key = f"links_lista_{tema_idx}_{p_idx}"
           if links_state_key not in st.session_state:
             st.session_state[links_state_key] = prop_item.get("links", [])
@@ -287,7 +361,12 @@ elif menu == "3. Cadastrar Candidatos & Propostas":
         if lista_itens_tema:
           propostas_candidato[tema] = lista_itens_tema
 
-    if st.button("Salvar Candidato no Sistema"):
+    botao_label = (
+        "Salvar Alterações do Candidato"
+        if modo_edicao
+        else "Salvar Novo Candidato"
+    )
+    if st.button(botao_label):
       if nome_candidato and partido:
         novo_registro = {
             "nome": nome_candidato,
@@ -302,9 +381,14 @@ elif menu == "3. Cadastrar Candidatos & Propostas":
             ),
             "propostas": propostas_candidato,
         }
-        dados["candidatos"].append(novo_registro)
+        if modo_edicao:
+          dados["candidatos"][idx_candidato] = novo_registro
+          st.success(f"Candidato {nome_candidato} atualizado com sucesso!")
+        else:
+          dados["candidatos"].append(novo_registro)
+          st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
+
         salvar_e_sincronizar_dados(dados)
-        st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
       else:
         st.error("Preencha ao menos o Nome e o Partido do candidato.")
 
@@ -363,6 +447,7 @@ elif menu == "Visualizar Embed / App Final":
       )
       st.markdown("---")
 
+      # Organiza a exibição lado a lado com as propostas dentro de cada card
       cols = st.columns(len(candidatos_filtrados))
       for i, cand in enumerate(candidatos_filtrados):
         with cols[i]:
@@ -375,9 +460,10 @@ elif menu == "Visualizar Embed / App Final":
               f" ({cand.get('sigla')})" if cand.get("sigla") else ""
           )
 
+          # Header do card do candidato
           st.markdown(
               f"""
-                    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; border-top: 4px solid {PRIMARY_COLOR}; text-align: center;">
+                    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px 8px 0 0; border-top: 4px solid {PRIMARY_COLOR}; text-align: center; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
                         <img src="{cand['foto']}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid {SECONDARY_COLOR};">
                         <h3 style="margin: 10px 0 5px 0; font-size: 1.1rem; color: #333;">{cand['nome']} {num_str}</h3>
                         <p style="margin: 0; font-size: 0.85rem; color: #666;">{cand['partido']}{sigla_str}</p>
@@ -386,11 +472,12 @@ elif menu == "Visualizar Embed / App Final":
               unsafe_allow_html=True,
           )
 
-          st.markdown("#### Propostas:")
+          # Container interno de propostas do candidato para o tema selecionado
           propostas_do_tema = cand.get("propostas", {}).get(
               tema_selecionado, []
           )
 
+          propostas_html_content = ""
           if propostas_do_tema:
             for prop in propostas_do_tema:
               links_html = ""
@@ -407,9 +494,23 @@ elif menu == "Visualizar Embed / App Final":
                     links_formatados.append(f"<span>{label}</span>")
                 links_html = f" <i>(Ref: {' | '.join(links_formatados)})</i>"
 
-              st.markdown(f"- {prop['descricao']}{links_html}", unsafe_allow_html=True)
+              propostas_html_content += (
+                  f"<li style='margin-bottom: 8px; font-size: 0.9rem;"
+                  f" color: #444;'>{prop['descricao']}{links_html}</li>"
+              )
+            propostas_box = f"<ul style='padding-left: 20px; margin: 0;'>{propostas_html_content}</ul>"
           else:
-            st.info("Nenhuma proposta cadastrada para este tema.")
+            propostas_box = "<p style='font-size: 0.85rem; color: #888; font-style: italic; margin: 0;'>Nenhuma proposta cadastrada para este tema.</p>"
+
+          st.markdown(
+              f"""
+                    <div style="background-color: #ffffff; padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid #ddd; border-top: none; min-height: 150px;">
+                        <strong style="font-size: 0.9rem; color: {SECONDARY_COLOR}; display: block; margin-bottom: 8px;">Propostas:</strong>
+                        {propostas_box}
+                    </div>
+                    """,
+              unsafe_allow_html=True,
+          )
 
       st.markdown("---")
       st.subheader("💻 Código HTML para Embedar no Portal")
@@ -418,8 +519,6 @@ elif menu == "Visualizar Embed / App Final":
           " aplicativo via iframe:"
       )
 
-      # Pega a URL pública atual do app Streamlit
       app_url = st.query_params.get("embed_url", "https://seu-app.streamlit.app")
-
       embed_code = f"""<iframe src="{app_url}?embed=true" width="100%" height="700px" style="border:none; border-radius:8px;"></iframe>"""
       st.code(embed_code, language="html")
