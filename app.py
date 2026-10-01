@@ -473,6 +473,8 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         if modo_edicao and idx_candidato is not None:
           dados["candidatos"][idx_candidato] = novo_registro
           st.success(f"Candidato {nome_candidato} atualizado com sucesso!")
+          salvar_e_sincronizar_dados(dados)
+          st.session_state["modo_edicao_candidato"] = None
         else:
           # Validação extra para evitar duplicidade acidental caso o nome já exista
           nomes_existentes = [c["nome"].strip().lower() for c in dados["candidatos"]]
@@ -480,29 +482,29 @@ elif menu == "3. Cadastrar e Editar Candidatos":
             st.error("Já existe um candidato cadastrado com este exato nome!")
           else:
             dados["candidatos"].append(novo_registro)
+            salvar_e_sincronizar_dados(dados)
             st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
 
-        # Limpa rigorosamente os campos de texto, estado e selecionador para o próximo cadastro
-        st.session_state["modo_edicao_candidato"] = None
-        for k in [
-            "cand_nome",
-            "cand_num",
-            "cand_partido",
-            "cand_sigla",
-            "cand_foto",
-            "select_gerenciar_candidato",
-        ]:
-          if k in st.session_state:
-            del st.session_state[k]
-        for k in list(st.session_state.keys()):
-          if (
-              k.startswith("propostas_lista_")
-              or k.startswith("links_lista_")
-              or k.startswith("loaded_")
-          ):
-            del st.session_state[k]
+            # Limpa rigorosamente o session_state E sobrescreve as variáveis locais para forçar o input a zerar
+            st.session_state["modo_edicao_candidato"] = None
+            for k in [
+                "cand_nome",
+                "cand_num",
+                "cand_partido",
+                "cand_sigla",
+                "cand_foto",
+                "select_gerenciar_candidato",
+            ]:
+              if k in st.session_state:
+                del st.session_state[k]
+            for k in list(st.session_state.keys()):
+              if (
+                  k.startswith("propostas_lista_")
+                  or k.startswith("links_lista_")
+                  or k.startswith("loaded_")
+              ):
+                del st.session_state[k]
 
-        salvar_e_sincronizar_dados(dados)
         st.rerun()
       else:
         st.error("Preencha ao menos o Nome e o Partido do candidato.")
