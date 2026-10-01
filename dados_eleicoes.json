@@ -83,6 +83,15 @@
             "cargo": "Presidente",
             "foto": "https://www.tse.jus.br/imagens/imagens/edmilson-silva-costa/@@images/image-200-3937c6013e3a4925dc6649cae9f96d45.png",
             "propostas": {}
+        },
+        {
+            "nome": "Edmilson Costa",
+            "numero": "21",
+            "partido": "Partido Comunista Brasileiro",
+            "sigla": "PCB",
+            "cargo": "Presidente",
+            "foto": "https://www.tse.jus.br/imagens/imagens/edmilson-silva-costa/@@images/image-200-3937c6013e3a4925dc6649cae9f96d45.png",
+            "propostas": {}
         }
     ]
 }
