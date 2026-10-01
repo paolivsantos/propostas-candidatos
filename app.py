@@ -201,76 +201,52 @@ elif menu == "3. Cadastrar e Editar Candidatos":
         " candidatos."
     )
   else:
-    # Gerenciamento de estado para saber se estamos editando ou criando um novo
-    if "modo_edicao_idx" not in st.session_state:
-      st.session_state["modo_edicao_idx"] = None  # None significa Novo Candidato
-
     if dados["candidatos"]:
-      st.markdown("##### Gerenciar Candidatos Existentes")
-      col_sel1, col_sel2, col_sel3 = st.columns([0.5, 0.3, 0.2])
+      # Adiciona a opção vazia/novo no topo da lista do select[cite: 6]
+      opcoes_select = ["-- Novo Candidato --"] + [
+          c["nome"] for c in dados["candidatos"]
+      ]
 
-      # Exibe apenas o nome do candidato no select
-      nomes_candidatos = [c["nome"] for c in dados["candidatos"]]
-      current_selection_index = (
-          st.session_state["modo_edicao_idx"]
-          if st.session_state["modo_edicao_idx"] is not None
-          else 0
+      # Mantém o controle de quem estava selecionado no session_state
+      if "candidato_selecionado_anterior" not in st.session_state:
+        st.session_state["candidato_selecionado_anterior"] = "-- Novo Candidato --"
+
+      escolha = st.selectbox(
+          "Selecione um candidato para editar ou escolha para criar novo:",
+          opcoes_select,
+          key="select_gerenciar_candidato",
       )
-      if current_selection_index >= len(nomes_candidatos):
-        current_selection_index = 0
 
-      with col_sel1:
-        candidato_escolhido = st.selectbox(
-            "Selecione um candidato para editar:",
-            nomes_candidatos,
-            index=current_selection_index,
-            key="select_candidato_edicao",
-        )
-
-      with col_sel2:
-        st.write("")  # Ajuste de alinhamento vertical
-        st.write("")
-        if st.button("✏️ Carregar para Edição", use_container_width=True):
-          st.session_state["modo_edicao_idx"] = nomes_candidatos.index(
-              candidato_escolhido
-          )
-          for k in list(st.session_state.keys()):
-            if (
-                k.startswith("propostas_lista_")
-                or k.startswith("links_lista_")
-                or k.startswith("loaded_")
-            ):
-              del st.session_state[k]
-          st.rerun()
-
-      with col_sel3:
-        st.write("")  # Ajuste de alinhamento vertical
-        st.write("")
-        if st.button("➕ Novo Candidato", use_container_width=True):
-          st.session_state["modo_edicao_idx"] = None
-          for k in list(st.session_state.keys()):
-            if (
-                k.startswith("propostas_lista_")
-                or k.startswith("links_lista_")
-                or k.startswith("loaded_")
-            ):
-              del st.session_state[k]
-          st.rerun()
-    else:
-      if st.button("➕ Adicionar Novo Candidato"):
-        st.session_state["modo_edicao_idx"] = None
+      # Se o usuário mudou a seleção no select, limpa os inputs e força o recarregamento dos estados
+      if escolha != st.session_state["candidato_selecionado_anterior"]:
+        st.session_state["candidato_selecionado_anterior"] = escolha
+        for k in list(st.session_state.keys()):
+          if (
+              k.startswith("propostas_lista_")
+              or k.startswith("links_lista_")
+              or k.startswith("loaded_")
+              or k.startswith("cand_")
+          ):
+            del st.session_state[k]
         st.rerun()
 
-    st.markdown("---")
+    # Identifica se estamos em modo edição ou novo
+    modo_edicao = False
+    candidato_selecionado = None
+    idx_candidato = None
 
-    # Identifica se está editando ou criando com base no session_state
-    modo_edicao = st.session_state["modo_edicao_idx"] is not None
-    idx_candidato = st.session_state["modo_edicao_idx"]
-    candidato_selecionado = (
-        dados["candidatos"][idx_candidato]
-        if modo_edicao and idx_candidato < len(dados["candidatos"])
-        else None
-    )
+    if (
+        dados["candidatos"]
+        and st.session_state.get("candidato_selecionado_anterior")
+        != "-- Novo Candidato --"
+    ):
+      nome_escolhido = st.session_state["candidato_selecionado_anterior"]
+      for idx, c in enumerate(dados["candidatos"]):
+        if c["nome"] == nome_escolhido:
+          modo_edicao = True
+          candidato_selecionado = c
+          idx_candidato = idx
+          break
 
     sub_titulo = (
         f"Editando Candidato: {candidato_selecionado['nome']}"
@@ -279,7 +255,7 @@ elif menu == "3. Cadastrar e Editar Candidatos":
     )
     st.subheader(sub_titulo)
 
-    # Valores padrão para os inputs
+    # Valores padrão limpos para novo cadastro ou preenchidos para edição
     def_nome = (
         candidato_selecionado["nome"]
         if modo_edicao and candidato_selecionado
@@ -354,18 +330,19 @@ elif menu == "3. Cadastrar e Editar Candidatos":
       with st.expander(f"📌 Propostas para: {tema}"):
         state_key = f"propostas_lista_{tema_idx}"
 
-        # Inicializa o estado das propostas do tema
+        # Inicializa o estado das propostas do tema garantindo limpeza se for novo candidato
         if state_key not in st.session_state or (
             modo_edicao
             and f"loaded_{idx_candidato}_{tema}" not in st.session_state
         ):
           propostas_existentes = def_propostas.get(tema, [])
-          if propostas_existentes:
+          if modo_edicao and propostas_existentes:
             st.session_state[state_key] = [
                 dict(p) for p in propostas_existentes
             ]
           else:
             st.session_state[state_key] = [{"descricao": "", "links": []}]
+
           if modo_edicao:
             st.session_state[f"loaded_{idx_candidato}_{tema}"] = True
 
@@ -468,12 +445,14 @@ elif menu == "3. Cadastrar e Editar Candidatos":
           dados["candidatos"].append(novo_registro)
           st.success(f"Candidato {nome_candidato} cadastrado com sucesso!")
 
-          st.session_state["modo_edicao_idx"] = None
+          # Reseta o select para "-- Novo Candidato --" e limpa o estado
+          st.session_state["candidato_selecionado_anterior"] = "-- Novo Candidato --"
           for k in list(st.session_state.keys()):
             if (
                 k.startswith("propostas_lista_")
                 or k.startswith("links_lista_")
                 or k.startswith("loaded_")
+                or k.startswith("cand_")
             ):
               del st.session_state[k]
 
